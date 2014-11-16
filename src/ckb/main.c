@@ -12,12 +12,52 @@
 
 #define N_KEYS 144
 FILE* output = 0;
-int count = 5;
+
 // Keyboard LED positions, measured roughly in 16th inches. Most keys are 3/4" apart.
 typedef struct {
     const char* name;
     int x, y;
 } keypos;
+
+#define _DEFAULT_SOURCE
+#ifdef __linux
+#include <features.h>
+#endif
+#include <stdio.h>
+#include <unistd.h>
+#include <time.h>
+#include <dirent.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
+
+struct node {
+    int asciiValCurrent;
+    int asciiValPrev;
+    struct node* next;
+};
+
+struct node* head;
+
+void add(int asciiValueCurrent, int asciiValuePrev){
+    // Making new node that is at top of the stack.
+    // note: ascii values are offset by -97 to make array index calculations easier
+    //"ascii" values 0-25 are a-z
+    //"ascii" val 26 is space
+    struct node* newNode = (struct node*)malloc(sizeof(struct node));
+    newNode->asciiValCurrent = asciiValueCurrent;
+    newNode->asciiValPrev = asciiValuePrev;
+    // Set newNode to be the top of the chain.
+    newNode->next = head;
+    // Set head pointer to point to newly made node.
+    head = newNode;
+}
+
+struct node* pop(){
+    struct node* returnNode = head;
+    head = head->next;
+    return returnNode;
+}
 
 keypos positions[] = {
     {"light", 222, 0}, {"lock", 234, 0}, {"mute", 273, 0},
@@ -34,17 +74,11 @@ FILE *notifyFile;
 // FILE *textFile;
 FILE *initFile;
 int markov[27][27];
-
 char prevLetter;
-
 
 #define WIDTH 298
 #define HEIGHT 76
 #define N_POSITIONS (sizeof(positions)/sizeof(keypos))
-
-void lightKey(int keyIndex){
-
-}
 
 void mainloop_random(float fr, float fg, float fb, float br, float bg, float bb){
     static float r[N_KEYS], g[N_KEYS], b[N_KEYS];
@@ -137,9 +171,8 @@ void mainloop_test(float fr, float fg, float fb, float br, float bg, float bb){
     fprintf(output, "notify all:on\n");
     fflush(output);
     if(fgets(notifyLine, 20, notifyFile) != NULL){
-
-        if ((strcmp(notifyLine, "key +space\n")==0)||
-            ((notifyLine[4] == '+')&&(notifyLine[5]>='a')&&(notifyLine[5]<='z')&&(strlen(notifyLine)==7))){
+        if ((strcmp(notifyLine, "key +space\n")==0) ||
+           ((notifyLine[4] == '+')&&(notifyLine[5]>='a')&&(notifyLine[5]<='z')&&(strlen(notifyLine)==7))){
             // clear keyboard to solid black
             fprintf(output, "rgb on %02x%02x%02x\n", 0, 0, 0);
             fflush(output);
@@ -152,11 +185,32 @@ void mainloop_test(float fr, float fg, float fb, float br, float bg, float bb){
                 markov[prevLetter-'a'][notifyLine[5]-'a']++;
                 prevLetter = notifyLine[5];
             }
-            // find max and normalize values to light up
-            int maxFreq = 0;
-            for (int i=0; i<27; i++){
-                if (markov[prevLetter-'a'][i]>maxFreq)
-                    maxFreq = (int) markov[prevLetter-'a'][i];
+            // add newly typed characters to stack
+            add(notifyLine[5]-'a', prevLetter-'a');
+        }
+        else if(strcmp(notifyLine, "key +bspace\n")==0){
+            struct node* removedNode = pop();
+            // don't do anything if stack is empty
+            if (removedNode != NULL){
+                markov[removedNode->asciiValPrev][removedNode->asciiValCurrent]--;
+                free(removedNode);
+            }
+        }
+        // find max and normalize values to light up
+        int maxFreq = 0;
+        for (int i=0; i<27; i++){
+            if (markov[prevLetter-'a'][i]>maxFreq)
+                maxFreq = (int) markov[prevLetter-'a'][i];
+        }
+        // light up keys
+        for (int i=0; i<27; i++){
+            float temp = (float) markov[prevLetter-'a'][i]/maxFreq;
+            // scale color brightness to saturate extremes
+            if (temp>0.7){
+                temp = temp + .5*(1-temp);
+            }
+            else {
+                temp = temp/2;
             }
             // light up keys
             for (int i=0; i<27; i++){
@@ -188,8 +242,7 @@ void mainloop_test(float fr, float fg, float fb, float br, float bg, float bb){
                
 
                 fflush(output);
-            }
-        }
+        } 
     }
 }
 
