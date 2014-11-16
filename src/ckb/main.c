@@ -30,6 +30,8 @@ keypos positions[] = {
 };
 
 
+
+
 FILE *notifyFile;
 
 #define WIDTH 298
@@ -128,12 +130,14 @@ void mainloop_ripple(float fr, float fg, float fb, float br, float bg, float bb)
 
 void mainloop_test(float fr, float fg, float fb, float br, float bg, float bb){
     char notifyLine[20];
+    fprintf(output, "notify all:on\n");
+    fflush(output);
     if(fgets(notifyLine, 20, notifyFile) != NULL){
-        printf("%c\n", notifyLine[4]);
-        fprintf(output, "rgb on %s:%02x%02x%02x\n", positions[count].name, (int)fr, (int)fg, (int)fb);
-        fprintf(output, "notify all:on\n");
-        fflush(output);
-        count++;
+        //if (notifyLine[4] == '+'){
+            //printf("rgb on %c:%02x%02x%02x\n", notifyLine[5], (int)fr, (int)fg, (int)fb);
+            fprintf(output, "rgb on %c:%02x%02x%02x\n", notifyLine[5], (int)fr, (int)fg, (int)fb);
+            fflush(output);
+        //}
     }
 }
 
@@ -197,8 +201,10 @@ int main(int argc, char** argv){
         mainloop = mainloop_wave;
     else if(!strcmp(argv[1], "random"))
         mainloop = mainloop_random;
-    else if(!strcmp(argv[1], "test"))
+    else if(!strcmp(argv[1], "test")){
+        // need to add new input parameter for training text
         mainloop = mainloop_test;
+    }
     else {
         printf("Usage: ckb (solid | gradient | ripple | wave | random) [foreground] [background]\n");
         exit(0);
@@ -222,7 +228,7 @@ int main(int argc, char** argv){
     float br = (background >> 16) & 0xff, bg = (background >> 8) & 0xff, bb = background & 0xff;
     while(1){
         mainloop(fr, fg, fb, br, bg, bb);
-        usleep(16667);
+        //usleep(16667);
     }
     return 0;
 }
