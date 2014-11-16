@@ -170,67 +170,84 @@ void mainloop_test(float fr, float fg, float fb, float br, float bg, float bb){
     char notifyLine[20];
     fprintf(output, "notify all:on\n");
     fflush(output);
+
     if(fgets(notifyLine, 20, notifyFile) != NULL){
         if ((strcmp(notifyLine, "key +space\n")==0) ||
+           (strcmp(notifyLine, "key +bspace\n")==0) ||
            ((notifyLine[4] == '+')&&(notifyLine[5]>='a')&&(notifyLine[5]<='z')&&(strlen(notifyLine)==7))){
+
             // clear keyboard to solid black
             fprintf(output, "rgb on %02x%02x%02x\n", 0, 0, 0);
             fflush(output);
             // update markov map
             if (strcmp(notifyLine, "key +space\n")==0){
                 markov[prevLetter-'a'][26]++;
+                add(26, prevLetter-'a');
                 prevLetter = 123;
             }
-            else{
-                markov[prevLetter-'a'][notifyLine[5]-'a']++;
-                prevLetter = notifyLine[5];
-            }
-            // add newly typed characters to stack
-            add(notifyLine[5]-'a', prevLetter-'a');
-        }
-        else if(strcmp(notifyLine, "key +bspace\n")==0){
-            struct node* removedNode = pop();
-            // don't do anything if stack is empty
-            if (removedNode != NULL){
-                markov[removedNode->asciiValPrev][removedNode->asciiValCurrent]--;
-                free(removedNode);
-            }
-        }
-        // find max and normalize values to light up
-        int maxFreq = 0;
-        for (int i=0; i<27; i++){
-            if (markov[prevLetter-'a'][i]>maxFreq)
-                maxFreq = (int) markov[prevLetter-'a'][i];
-        }
-        // light up keys
-        for (int i=0; i<27; i++){
-            float temp = (float) markov[prevLetter-'a'][i]/maxFreq;
-            // scale color brightness to saturate extremes
-            if (temp>0.7){
-                temp = temp + .5*(1-temp);
+            else if(strcmp(notifyLine, "key +bspace\n")==0){
+                // add newly typed characters to stack
+                // add(notifyLine[5]-'a', prevLetter-'a');
+                if (head != NULL){
+                    struct node* removedNode = pop();
+                    // don't do anything if stack is empty
+                    if (removedNode != NULL){
+                        //prevLetter = removedNode->asciiValCurrent + 'a';
+                        if (markov[removedNode->asciiValPrev][removedNode->asciiValCurrent + 'a']>1){
+                            markov[removedNode->asciiValPrev][removedNode->asciiValCurrent + 'a']--;
+                        }
+                        //free(removedNode);
+                    }
+                }
+
             }
             else {
-                temp = temp/2;
+                markov[prevLetter-'a'][notifyLine[5]-'a']++;
+                add(notifyLine[5]-'a', prevLetter-'a');
+                prevLetter = notifyLine[5];
             }
+        
+            // find max and normalize values to light up
+            int maxFreq = 0;
+            for (int i=0; i<27; i++){
+                if (markov[prevLetter-'a'][i]>maxFreq)
+                    maxFreq = (int) markov[prevLetter-'a'][i];
+            }
+
+            printf("%s \n", "About to light up keys");
             // light up keys
             for (int i=0; i<27; i++){
                 float temp = (float) markov[prevLetter-'a'][i]/maxFreq;
                 // scale color brightness to saturate extremes
-                if (temp>0.7){
-                    temp = temp + .5*(1-temp);
+                if (temp>0.5){
+                    temp = temp + .5*(1.0-temp);
                 }
                 else {
-                    temp = temp/2;
+                    temp = temp/2.0;
                 }
+                if (temp>0.9) temp = 0.9;
+                if (temp<0.1) temp = 0.1;
+
+                printf("%f ", temp);
+
                 // light up keys
+                int red = (int)(fr*temp);
+                if (red > 255) red = 5;
+                int green = (int)(fg*temp);
+                if (green > 255) green = 5;
+
+                int blue = (int)(fb*temp);
+                if (blue > 255) blue = 5;
+
                 if (i==26){
-                    fprintf(output, "rgb on %s:%02x%02x%02x\n", "space", (int)(fr*temp),(int)(fg*temp),(int)(fb*temp));
+                    fprintf(output, "rgb on %s:%02x%02x%02x\n", "space", red, green, blue);
                 }
                 else{
-                    fprintf(output, "rgb on %c:%02x%02x%02x\n", i+'a', (int)(fr*temp),(int)(fg*temp),(int)(fb*temp));
+                    fprintf(output, "rgb on %c:%02x%02x%02x\n", i+'a', red, green, blue);
                 }
                 fflush(output);
-        } 
+            } 
+        }
     }
 }
 
@@ -286,7 +303,7 @@ int main(int argc, char** argv){
     // Fill in initial frequencies of markov
     for (int i=0; i<27; i++){
         for (int j=0; j<27; j++){
-            markov[i][j] = 1;
+            markov[i][j] = 0;
         }
     }
     // read markov frequencies from file
@@ -297,11 +314,17 @@ int main(int argc, char** argv){
         for(int j=0; j<27; j++){
             fgets(initLine, 10, initFile);
             int num = atoi(initLine);
-            markov[i][j] = num/10;
+            markov[i][j] = num/10 + 5;
         }
     }
+
     // set first letter to space
     prevLetter = 123;
+
+
+    // initialize list with spaces to start
+    for (int i = 0; i < 100; i++)
+        add(26, 26);
 
     // open file to read letters as they are pressed
     notifyFile = fopen("/dev/input/ckb1/notify0", "rt");
@@ -345,7 +368,7 @@ int main(int argc, char** argv){
     float br = (background >> 16) & 0xff, bg = (background >> 8) & 0xff, bb = background & 0xff;
     while(1){
         mainloop(fr, fg, fb, br, bg, bb);
-        //usleep(16667);
+        // usleep(16667);
     }
 
     // fclose(notifyFile);
