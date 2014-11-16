@@ -231,19 +231,19 @@ void mainloop_test(float fr, float fg, float fb, float br, float bg, float bb){
                 printf("%f ", temp);
 
                 // light up keys
-                int red = (int)(fr*temp);
-                if (red > 255) red = 5;
-                int green = (int)(fg*temp);
-                if (green > 255) green = 5;
+                // int red = (int)(fr*temp);
+                // if (red > 255) red = 5;
+                // int green = (int)(fg*temp);
+                // if (green > 255) green = 5;
 
-                int blue = (int)(fb*temp);
-                if (blue > 255) blue = 5;
+                // int blue = (int)(fb*temp);
+                // if (blue > 255) blue = 5;
 
                 if (i==26){
-                    fprintf(output, "rgb on %s:%02x%02x%02x\n", "space", red, green, blue);
+                    fprintf(output, "rgb on %s:%02x%02x%02x\n", "space", (int)fr, (int)fg, (int)fb);
                 }
                 else{
-                    fprintf(output, "rgb on %c:%02x%02x%02x\n", i+'a', red, green, blue);
+                    fprintf(output, "rgb on %c:%02x%02x%02x\n", i+'a', (int)fr, (int)fg, (int)fb);
                 }
                 fflush(output);
             } 
