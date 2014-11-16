@@ -193,9 +193,9 @@ void mainloop_test(float fr, float fg, float fb, float br, float bg, float bb){
                     // don't do anything if stack is empty
                     if (removedNode != NULL){
                         //prevLetter = removedNode->asciiValCurrent + 'a';
-                        if (markov[removedNode->asciiValPrev][removedNode->asciiValCurrent + 'a']>1){
-                            markov[removedNode->asciiValPrev][removedNode->asciiValCurrent + 'a']--;
-                        }
+                        // if (markov[removedNode->asciiValPrev][removedNode->asciiValCurrent + 'a']>1){
+                            markov[removedNode->asciiValPrev][removedNode->asciiValCurrent]--;
+                        // }
                         //free(removedNode);
                     }
                 }
@@ -214,7 +214,7 @@ void mainloop_test(float fr, float fg, float fb, float br, float bg, float bb){
                     maxFreq = (int) markov[prevLetter-'a'][i];
             }
 
-            printf("%s \n", "About to light up keys");
+            // printf("%s \n", "About to light up keys");
             // light up keys
             for (int i=0; i<27; i++){
                 float temp = (float) markov[prevLetter-'a'][i]/maxFreq;
@@ -225,10 +225,10 @@ void mainloop_test(float fr, float fg, float fb, float br, float bg, float bb){
                 else {
                     temp = temp/2.0;
                 }
-                if (temp>0.9) temp = 0.9;
-                if (temp<0.1) temp = 0.1;
+                if (temp>0.99) temp = 0.99;
+                if (temp<0.01) temp = 0.01;
 
-                printf("%f ", temp);
+                // printf("%f ", temp);
 
                 // light up keys
                 // int red = (int)(fr*temp);
@@ -240,10 +240,10 @@ void mainloop_test(float fr, float fg, float fb, float br, float bg, float bb){
                 // if (blue > 255) blue = 5;
 
                 if (i==26){
-                    fprintf(output, "rgb on %s:%02x%02x%02x\n", "space", (int)fr, (int)fg, (int)fb);
+                    fprintf(output, "rgb on %s:%02x%02x%02x\n", "space", (int)(fr*temp), (int)(fg*temp), (int)(fb*temp));
                 }
                 else{
-                    fprintf(output, "rgb on %c:%02x%02x%02x\n", i+'a', (int)fr, (int)fg, (int)fb);
+                    fprintf(output, "rgb on %c:%02x%02x%02x\n", i+'a', (int)(fr*temp), (int)(fg*temp), (int)(fb*temp));
                 }
                 fflush(output);
             } 
@@ -314,7 +314,7 @@ int main(int argc, char** argv){
         for(int j=0; j<27; j++){
             fgets(initLine, 10, initFile);
             int num = atoi(initLine);
-            markov[i][j] = num/10 + 5;
+            markov[i][j] = num/10;
         }
     }
 
@@ -368,7 +368,7 @@ int main(int argc, char** argv){
     float br = (background >> 16) & 0xff, bg = (background >> 8) & 0xff, bb = background & 0xff;
     while(1){
         mainloop(fr, fg, fb, br, bg, bb);
-        // usleep(16667);
+        usleep(16667);
     }
 
     // fclose(notifyFile);
