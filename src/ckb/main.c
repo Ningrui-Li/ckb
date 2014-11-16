@@ -30,9 +30,39 @@ keypos positions[] = {
 };
 
 
-
-
 FILE *notifyFile;
+// FILE *textFile;
+int markov[26][26];
+/*= {
+        {0,1,2,0,5,1,6,0,2,5,0,4,1,0,2,6,5,0,9,8,5,4,2,0,1,0},
+        {0,1,2,0,5,1,6,0,2,5,0,4,1,0,2,6,5,0,9,8,5,4,2,0,1,0},
+        {0,1,2,0,5,1,6,0,2,5,0,4,1,0,2,6,5,0,9,8,5,4,2,0,1,0},
+        {0,1,2,0,5,1,6,0,2,5,0,4,1,0,2,6,5,0,9,8,5,4,2,0,1,0},
+        {0,1,2,0,5,1,6,0,2,5,0,4,1,0,2,6,5,0,9,8,5,4,2,0,1,0},
+        {0,1,2,0,5,1,6,0,2,5,0,4,1,0,2,6,5,0,9,8,5,4,2,0,1,0},
+        {0,1,2,0,5,1,6,0,2,5,0,4,1,0,2,6,5,0,9,8,5,4,2,0,1,0},
+        {0,1,2,0,5,1,6,0,2,5,0,4,1,0,2,6,5,0,9,8,5,4,2,0,1,0},
+        {0,1,2,0,5,1,6,0,2,5,0,4,1,0,2,6,5,0,9,8,5,4,2,0,1,0},
+        {0,1,2,0,5,1,6,0,2,5,0,4,1,0,2,6,5,0,9,8,5,4,2,0,1,0},
+        {0,1,2,0,5,1,6,0,2,5,0,4,1,0,2,6,5,0,9,8,5,4,2,0,1,0},
+        {0,1,2,0,5,1,6,0,2,5,0,4,1,0,2,6,5,0,9,8,5,4,2,0,1,0},
+        {0,1,2,0,5,1,6,0,2,5,0,4,1,0,2,6,5,0,9,8,5,4,2,0,1,0},
+        {0,1,2,0,5,1,6,0,2,5,0,4,1,0,2,6,5,0,9,8,5,4,2,0,1,0},
+        {0,1,2,0,5,1,6,0,2,5,0,4,1,0,2,6,5,0,9,8,5,4,2,0,1,0},
+        {0,1,2,0,5,1,6,0,2,5,0,4,1,0,2,6,5,0,9,8,5,4,2,0,1,0},
+        {0,1,2,0,5,1,6,0,2,5,0,4,1,0,2,6,5,0,9,8,5,4,2,0,1,0},
+        {0,1,2,0,5,1,6,0,2,5,0,4,1,0,2,6,5,0,9,8,5,4,2,0,1,0},
+        {0,1,2,0,5,1,6,0,2,5,0,4,1,0,2,6,5,0,9,8,5,4,2,0,1,0},
+        {0,1,2,0,5,1,6,0,2,5,0,4,1,0,2,6,5,0,9,8,5,4,2,0,1,0},
+        {0,1,2,0,5,1,6,0,2,5,0,4,1,0,2,6,5,0,9,8,5,4,2,0,1,0},
+        {0,1,2,0,5,1,6,0,2,5,0,4,1,0,2,6,5,0,9,8,5,4,2,0,1,0},
+        {0,1,2,0,5,1,6,0,2,5,0,4,1,0,2,6,5,0,9,8,5,4,2,0,1,0},
+        {0,1,2,0,5,1,6,0,2,5,0,4,1,0,2,6,5,0,9,8,5,4,2,0,1,0},
+        {0,1,2,0,5,1,6,0,2,5,0,4,1,0,2,6,5,0,9,8,5,4,2,0,1,0},
+        {0,1,2,0,5,1,6,0,2,5,0,4,1,0,2,6,5,0,9,8,5,4,2,0,1,0}
+    };*/
+char prevLetter;
+
 
 #define WIDTH 298
 #define HEIGHT 76
@@ -133,13 +163,45 @@ void mainloop_test(float fr, float fg, float fb, float br, float bg, float bb){
     fprintf(output, "notify all:on\n");
     fflush(output);
     if(fgets(notifyLine, 20, notifyFile) != NULL){
-        fprintf(output, "rgb on %02x%02x%02x\n", 0, 0, 0);
-        fflush(output);
-        //if (notifyLine[4] == '+'){
-            //printf("rgb on %c:%02x%02x%02x\n", notifyLine[5], (int)fr, (int)fg, (int)fb);
-            fprintf(output, "rgb on %c:%02x%02x%02x\n", notifyLine[5], (int)fr, (int)fg, (int)fb);
+
+        if ((notifyLine[4] == '+')&&(strlen(notifyLine)==7)){
+            // clear keyboard to solid black
+            fprintf(output, "rgb on %02x%02x%02x\n", 0, 0, 0);
             fflush(output);
-        //}
+
+            // textFile = fopen("/home/qian/Desktop/markovtext.txt", "a");
+            // fprintf(textFile, "%c", notifyLine[5]);
+            // fclose(textFile);
+
+            markov[prevLetter-'a'][notifyLine[5]-'a']++;
+            prevLetter = notifyLine[5];
+
+            // printf("prevLetter = %c \n", prevLetter);
+
+            int maxFreq = 0;
+            // printf("Saved maxFreq=%d", 0);
+
+            for (int i=0; i<26; i++){
+                // printf("i=%d ", i);
+                // printf("%d ", markov[prevLetter-'a'][i]);
+                if (markov[prevLetter-'a'][i]>maxFreq)
+                    maxFreq = (int) markov[prevLetter-'a'][i];
+            }
+            // printf("\n");
+
+            for (int i=0; i<26; i++){
+                float temp = (float) markov[prevLetter-'a'][i]/maxFreq;
+                // printf("%d ", markov[prevLetter-'a'][i]);
+                fprintf(output, "rgb on %c:%02x%02x%02x\n", i+'a', (int)(fr*temp),(int)(fg*temp),(int)(fb*temp));
+                fflush(output);
+            }
+            // printf("\n");
+
+            // old code, uncomment lines 3-4
+            //printf("rgb on %c:%02x%02x%02x\n", notifyLine[5], (int)fr, (int)fg, (int)fb);
+            // fprintf(output, "rgb on %c:%02x%02x%02x\n", notifyLine[5], (int)fr, (int)fg, (int)fb);
+            // fflush(output);
+        }
     }
 }
 
@@ -191,7 +253,24 @@ int main(int argc, char** argv){
         printf("Usage: ckb (solid | gradient | ripple | wave | random) [foreground] [background]\n");
         exit(0);
     }
+
+    // Fill in initial frequencies of markov
+    for (int i=0; i<26; i++){
+        for (int j=0; j<26; j++){
+            markov[i][j] = j;
+        }
+    }
+    prevLetter = 'a';
+
+
+    // notifyFile = fopen("/dev/input/ckb1/notify0", "w");
+    // fclose(notifyFile);
+
     notifyFile = fopen("/dev/input/ckb1/notify0", "rt");
+
+    // textFile = fopen("/home/qian/Desktop/markovtext.txt", "w");
+    // fclose(textFile);
+
     //notifyFile = fopen("tmp/ckb1/notify0", "rt");
     void (*mainloop)(float,float,float,float,float,float);
     if(!strcmp(argv[1], "solid"))
@@ -233,5 +312,7 @@ int main(int argc, char** argv){
         mainloop(fr, fg, fb, br, bg, bb);
         //usleep(16667);
     }
+
+    // fclose(notifyFile);
     return 0;
 }
