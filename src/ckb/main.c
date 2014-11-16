@@ -12,7 +12,7 @@
 
 #define N_KEYS 144
 FILE* output = 0;
-
+int count = 5;
 // Keyboard LED positions, measured roughly in 16th inches. Most keys are 3/4" apart.
 typedef struct {
     const char* name;
@@ -29,9 +29,16 @@ keypos positions[] = {
     {"lctrl", 42, 75}, {"lwin", 56, 75}, {"lalt", 70, 75}, {"space", 122, 75}, {"ralt", 164, 75}, {"rwin", 178, 75}, {"rmenu", 190, 75}, {"rctrl", 202, 75}, {"left", 222, 75}, {"down", 234, 75}, {"right", 246, 75}, {"num0", 267, 75}, {"numdot", 285, 75},
 };
 
+
+FILE *notifyFile;
+
 #define WIDTH 298
 #define HEIGHT 76
 #define N_POSITIONS (sizeof(positions)/sizeof(keypos))
+
+void lightKey(int keyIndex){
+
+}
 
 void mainloop_random(float fr, float fg, float fb, float br, float bg, float bb){
     static float r[N_KEYS], g[N_KEYS], b[N_KEYS];
@@ -120,9 +127,14 @@ void mainloop_ripple(float fr, float fg, float fb, float br, float bg, float bb)
 }
 
 void mainloop_test(float fr, float fg, float fb, float br, float bg, float bb){
- fprintf(output, "rgb on %s:%02x%02x%02x\n", positions[58].name, (int)fr, (int)fg, (int)fb);
-    fflush(output);
-    exit(0);
+    char notifyLine[20];
+    if(fgets(notifyLine, 20, notifyFile) != NULL){
+        printf("%c\n", notifyLine[4]);
+        fprintf(output, "rgb on %s:%02x%02x%02x\n", positions[count].name, (int)fr, (int)fg, (int)fb);
+        fprintf(output, "notify all:on\n");
+        fflush(output);
+        count++;
+    }
 }
 
 void mainloop_gradient(float fr, float fg, float fb, float br, float bg, float bb){
@@ -173,6 +185,7 @@ int main(int argc, char** argv){
         printf("Usage: ckb (solid | gradient | ripple | wave | random) [foreground] [background]\n");
         exit(0);
     }
+    notifyFile = fopen("/tmp/ckb1/notify0", "rt");
     void (*mainloop)(float,float,float,float,float,float);
     if(!strcmp(argv[1], "solid"))
         mainloop = mainloop_solid;
