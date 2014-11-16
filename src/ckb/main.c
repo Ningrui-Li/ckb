@@ -163,18 +163,30 @@ void mainloop_test(float fr, float fg, float fb, float br, float bg, float bb){
                 float temp = (float) markov[prevLetter-'a'][i]/maxFreq;
                 // scale color brightness to saturate extremes
                 if (temp>0.7){
-                    temp = temp + .5*(1-temp);
+                    //temp = temp + .5*(1-temp);
                 }
                 else {
-                    temp = temp/2;
+                    //temp = temp/2;
                 }
                 // light up keys
-                if (i==26){
-                    fprintf(output, "rgb on %s:%02x%02x%02x\n", "space", (int)(fr*temp),(int)(fg*temp),(int)(fb*temp));
+                if(temp>=0.5){
+                     if (i==26){
+                        fprintf(output, "rgb on %s:%02x%02x%02x\n", "space", (int)(fr*temp),(int)(fg*temp),(int)(fb*temp));
+                    }
+                    else{
+                        fprintf(output, "rgb on %c:%02x%02x%02x\n", i+'a', (int)(fr*temp),(int)(fg*temp),(int)(fb*temp));
+                    }
                 }
                 else{
-                    fprintf(output, "rgb on %c:%02x%02x%02x\n", i+'a', (int)(fr*temp),(int)(fg*temp),(int)(fb*temp));
+                    if (i==26){
+                        fprintf(output, "rgb on %s:%02x%02x%02x\n", "space", (int)(br*temp),(int)(bg*temp),(int)(bb*temp));
+                    }
+                    else{
+                        fprintf(output, "rgb on %c:%02x%02x%02x\n", i+'a', (int)(br*temp),(int)(bg*temp),(int)(bb*temp));
+                    }
                 }
+               
+
                 fflush(output);
             }
         }
