@@ -33,7 +33,7 @@ keypos positions[] = {
 FILE *notifyFile;
 // FILE *textFile;
 FILE *initFile;
-int markov[26][26];
+int markov[27][27];
 
 char prevLetter;
 
@@ -138,43 +138,45 @@ void mainloop_test(float fr, float fg, float fb, float br, float bg, float bb){
     fflush(output);
     if(fgets(notifyLine, 20, notifyFile) != NULL){
 
-        if ((notifyLine[4] == '+')&&(strlen(notifyLine)==7)){
+        if ((strcmp(notifyLine, "key +space\n")==0)||
+            ((notifyLine[4] == '+')&&(notifyLine[5]>='a')&&(notifyLine[5]<='z')&&(strlen(notifyLine)==7))){
             // clear keyboard to solid black
             fprintf(output, "rgb on %02x%02x%02x\n", 0, 0, 0);
             fflush(output);
-
-            // textFile = fopen("/home/qian/Desktop/markovtext.txt", "a");
-            // fprintf(textFile, "%c", notifyLine[5]);
-            // fclose(textFile);
-
-            markov[prevLetter-'a'][notifyLine[5]-'a']++;
-            prevLetter = notifyLine[5];
-
-            // printf("prevLetter = %c \n", prevLetter);
-
+            // update markov map
+            if (strcmp(notifyLine, "key +space\n")==0){
+                markov[prevLetter-'a'][26]++;
+                prevLetter = 123;
+            }
+            else{
+                markov[prevLetter-'a'][notifyLine[5]-'a']++;
+                prevLetter = notifyLine[5];
+            }
+            // find max and normalize values to light up
             int maxFreq = 0;
-            // printf("Saved maxFreq=%d", 0);
-
-            for (int i=0; i<26; i++){
-                // printf("i=%d ", i);
-                // printf("%d ", markov[prevLetter-'a'][i]);
+            for (int i=0; i<27; i++){
                 if (markov[prevLetter-'a'][i]>maxFreq)
                     maxFreq = (int) markov[prevLetter-'a'][i];
             }
-            // printf("\n");
-
-            for (int i=0; i<26; i++){
+            // light up keys
+            for (int i=0; i<27; i++){
                 float temp = (float) markov[prevLetter-'a'][i]/maxFreq;
-                // printf("%d ", markov[prevLetter-'a'][i]);
-                fprintf(output, "rgb on %c:%02x%02x%02x\n", i+'a', (int)(fr*temp),(int)(fg*temp),(int)(fb*temp));
+                // scale color brightness to saturate extremes
+                if (temp>0.7){
+                    temp = temp + .5*(1-temp);
+                }
+                else {
+                    temp = temp/2;
+                }
+                // light up keys
+                if (i==26){
+                    fprintf(output, "rgb on %s:%02x%02x%02x\n", "space", (int)(fr*temp),(int)(fg*temp),(int)(fb*temp));
+                }
+                else{
+                    fprintf(output, "rgb on %c:%02x%02x%02x\n", i+'a', (int)(fr*temp),(int)(fg*temp),(int)(fb*temp));
+                }
                 fflush(output);
             }
-            // printf("\n");
-
-            // old code, uncomment lines 3-4
-            //printf("rgb on %c:%02x%02x%02x\n", notifyLine[5], (int)fr, (int)fg, (int)fb);
-            // fprintf(output, "rgb on %c:%02x%02x%02x\n", notifyLine[5], (int)fr, (int)fg, (int)fb);
-            // fflush(output);
         }
     }
 }
@@ -229,41 +231,29 @@ int main(int argc, char** argv){
     }
 
     // Fill in initial frequencies of markov
-    for (int i=0; i<26; i++){
-        for (int j=0; j<26; j++){
-            markov[i][j] = 0;
+    for (int i=0; i<27; i++){
+        for (int j=0; j<27; j++){
+            markov[i][j] = 1;
         }
     }
-
-    printf("Markov populated");
-
-    char initLine[100];
-    initFile = fopen("../markovFreq.txt", "rt");
-    for(int i=0;i<26;i++){
-        fgets(initLine, 100, initFile);
+    // read markov frequencies from file
+    char initLine[10];
+    initFile = fopen("markovOut.txt", "rt");
+    for(int i=0; i<27; i++){
+        fgets(initLine, 10, initFile);
+        for(int j=0; j<27; j++){
+            fgets(initLine, 10, initFile);
+            int num = atoi(initLine);
+            markov[i][j] = num/10;
+        }
     }
-        //char * ptr = strtok(initFile," ");
-        //int key = *ptr - 'a';
-        //printf("%d",key);
-        //int i = 0;
-        //for(int j=0;j<26;j++){
-        //    markov[key][i] = *ptr;
-        //    i++;
-        //    ptr++;
-        //}
+    // set first letter to space
+    prevLetter = 123;
 
-    prevLetter = 'a';
-
-
-    // notifyFile = fopen("/dev/input/ckb1/notify0", "w");
-    // fclose(notifyFile);
-
+    // open file to read letters as they are pressed
     notifyFile = fopen("/dev/input/ckb1/notify0", "rt");
 
-    // textFile = fopen("/home/qian/Desktop/markovtext.txt", "w");
-    // fclose(textFile);
-
-    //notifyFile = fopen("tmp/ckb1/notify0", "rt");
+    // start main loop
     void (*mainloop)(float,float,float,float,float,float);
     if(!strcmp(argv[1], "solid"))
         mainloop = mainloop_solid;
