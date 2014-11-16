@@ -133,6 +133,8 @@ void mainloop_test(float fr, float fg, float fb, float br, float bg, float bb){
     fprintf(output, "notify all:on\n");
     fflush(output);
     if(fgets(notifyLine, 20, notifyFile) != NULL){
+        fprintf(output, "rgb on %02x%02x%02x\n", 0, 0, 0);
+        fflush(output);
         //if (notifyLine[4] == '+'){
             //printf("rgb on %c:%02x%02x%02x\n", notifyLine[5], (int)fr, (int)fg, (int)fb);
             fprintf(output, "rgb on %c:%02x%02x%02x\n", notifyLine[5], (int)fr, (int)fg, (int)fb);
@@ -189,7 +191,8 @@ int main(int argc, char** argv){
         printf("Usage: ckb (solid | gradient | ripple | wave | random) [foreground] [background]\n");
         exit(0);
     }
-    notifyFile = fopen("/tmp/ckb1/notify0", "rt");
+    notifyFile = fopen("/dev/input/ckb1/notify0", "rt");
+    //notifyFile = fopen("tmp/ckb1/notify0", "rt");
     void (*mainloop)(float,float,float,float,float,float);
     if(!strcmp(argv[1], "solid"))
         mainloop = mainloop_solid;
